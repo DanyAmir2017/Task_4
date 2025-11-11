@@ -3,6 +3,7 @@ import { Routes, Route } from 'react-router-dom';
 
 import AllPerks from '../src/pages/AllPerks.jsx';
 import { renderWithRouter } from './utils/renderWithRouter.js';
+import { AuthProvider } from '../src/context/AuthContext.jsx';
 
 
   
@@ -15,9 +16,11 @@ describe('AllPerks page (Directory)', () => {
 
     // Render the exploration page so it performs its real HTTP fetch.
     renderWithRouter(
-      <Routes>
-        <Route path="/explore" element={<AllPerks />} />
-      </Routes>,
+      <AuthProvider>
+        <Routes>
+          <Route path="/explore" element={<AllPerks />} />
+        </Routes>
+      </AuthProvider>,
       { initialEntries: ['/explore'] }
     );
 
@@ -25,7 +28,7 @@ describe('AllPerks page (Directory)', () => {
     // fetch finished.
     await waitFor(() => {
       expect(screen.getByText(seededPerk.title)).toBeInTheDocument();
-    });
+    }, { timeout: 10000 });
 
     // Interact with the name filter input using the real value that
     // corresponds to the seeded record.
@@ -34,7 +37,7 @@ describe('AllPerks page (Directory)', () => {
 
     await waitFor(() => {
       expect(screen.getByText(seededPerk.title)).toBeInTheDocument();
-    });
+    }, { timeout: 10000 });
 
     // The summary text should continue to reflect the number of matching perks.
     expect(screen.getByText(/showing/i)).toHaveTextContent('Showing');
@@ -51,7 +54,34 @@ describe('AllPerks page (Directory)', () => {
   */
 
   test('lists public perks and responds to merchant filtering', async () => {
-    // This will always fail until the TODO above is implemented.
-    expect(true).toBe(false);
+    // Use the seeded record
+    const seededPerk = global.__TEST_CONTEXT__.seededPerk;
+
+    // Render the exploration page so it performs a real HTTP fetch
+    renderWithRouter(
+      <AuthProvider>
+        <Routes>
+          <Route path="/explore" element={<AllPerks />} />
+        </Routes>
+      </AuthProvider>,
+      { initialEntries: ['/explore'] }
+    );
+
+    // Wait for the fetch to finish - baseline card appears
+    await waitFor(() => {
+      expect(screen.getByText(seededPerk.title)).toBeInTheDocument();
+    }, { timeout: 10000 });
+
+    // Choose the record's merchant from the dropdown
+    const merchantDropdown = screen.getByRole('combobox');
+    fireEvent.change(merchantDropdown, { target: { value: seededPerk.merchant } });
+
+    // Wait for the filtered results to be displayed
+    await waitFor(() => {
+      expect(screen.getByText(seededPerk.title)).toBeInTheDocument();
+    }, { timeout: 10000 });
+
+    // Verify the summary text reflects the number of matching perks
+    expect(screen.getByText(/showing/i)).toHaveTextContent('Showing');
   });
 });
